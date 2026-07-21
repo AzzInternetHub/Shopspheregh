@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Browser Cache Auto-Clear Directives -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <title>ShopSphere | Premium Campus Marketplace</title>
+  <!-- SEO & Social Meta Configuration -->
+  <meta name="description" content="Premium, enterprise-quality dynamic marketplace for UDS students and all of Ghana. Built by Azz Internet Hub.">
+  <meta property="og:title" content="ShopSphere | Luxury Digital Marketplace">
+  <meta property="og:description" content="Get premium goods at student prices. Fast local campus delivery.">
+  <meta property="og:type" content="website">
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css?v=1.0.1">
+  
+  <!-- Fonts & Material Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+  
+  <!-- Paystack Engine Setup -->
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+</head>
+<body>
+
+  <!-- Premium Application Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-block" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        <img src="logo.png" alt="ShopSphere Logo" class="app-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="brand-text-fallback" style="display: none;">
+          <span class="logo-icon"><span class="material-icons-outlined">blur_on</span></span>
+          <h1 class="brand-title">ShopSphere</h1>
+        </div>
+      </div>
+      
+      <div class="search-bar-wrapper">
+        <span class="material-icons-outlined search-icon">search</span>
+        <input type="text" id="global-search" placeholder="Search products, brands, or categories..." autocomplete="off">
+        <div id="search-suggestions" class="suggestions-dropdown hidden"></div>
+      </div>
+
+      <nav class="header-actions">
+        <button class="nav-btn" id="toggle-cart-btn" aria-label="Open Shopping Cart" title="View Selection Bag">
+          <span class="material-icons-outlined">shopping_bag</span>
+          <span class="badge-indicator" id="cart-counter">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="viewport-main">
+    <!-- Dynamic Hero Banner Stage -->
+    <section class="hero-stage">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <span class="hero-tagline">Welcome to ShopSphere</span>
+        <h2 class="hero-headline">UDS - Dungu<br>Market Place.</h2>
+        <p class="hero-subtext" id="branding-motto">For business owners and buying daily needs...</p>
+        <a href="#product-showcase" class="cta-action-btn">
+          <span>Explore Collections</span>
+          <span class="material-icons-outlined">arrow_forward</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Interactive Managed Categories List -->
+    <section class="section-container">
+      <div class="section-header-flex">
+        <h3 class="section-title">Shop By Category</h3>
+        <button id="reset-category-btn" class="category-reset-btn hidden">Show All Products</button>
+      </div>
+      <div class="categories-grid" id="categories-container">
+        <!-- Injected via JavaScript App Engine -->
+      </div>
+    </section>
+
+    <!-- Master Interactive Catalog Stage -->
+    <section class="section-container" id="product-showcase">
+      <h3 class="section-title" id="catalog-title">Featured Masterpieces</h3>
+      <div class="products-grid" id="products-container">
+        <!-- Injected via JavaScript App Engine -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Product Detail Lightbox Modal -->
+  <div class="modal-backdrop hidden" id="product-modal">
+    <div class="modal-window extended-panel">
+      <button class="modal-close-btn" id="close-modal" title="Close details">
+        <span class="material-icons-outlined">close</span>
+      </button>
+      <div class="product-viewer-layout" id="modal-product-content">
+        <!-- Dynamic Target Presentation Layout -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Image Viewer Modal -->
+  <div class="image-fullscreen-backdrop hidden" id="fullscreen-image-modal">
+    <button class="fullscreen-close-btn" id="close-fullscreen-img" title="Close Full View">
+      <span class="material-icons-outlined">close</span>
+    </button>
+    <div class="fullscreen-img-stage">
+      <img id="fullscreen-active-img" src="" alt="Full view product image">
+      <span class="fullscreen-hint">Click anywhere or press Esc to restore view</span>
+    </div>
+  </div>
+
+  <!-- Cart Flyout Dynamic Drawer -->
+  <div class="drawer-backdrop hidden" id="cart-drawer">
+    <div class="drawer-panel">
+      <!-- Locked Header Space -->
+      <div class="drawer-header">
+        <div class="header-title-block">
+          <h4>Your Selections</h4>
+          <p class="drawer-subtitle">Review items and secure checkout</p>
+        </div>
+        <button id="close-cart-btn" class="close-txt-btn" title="Return to store">
+          <span class="material-icons-outlined">arrow_back</span>
+          <span>Return</span>
+        </button>
+      </div>
+      
+      <!-- Butter-Smooth Scrollable Content Space -->
+      <div class="drawer-scrollable">
+        <div id="cart-items-wrapper">
+          <!-- Interactive multi-vendor item rows dynamically injected here -->
+        </div>
+        
+        <!-- Premium Checkout System Entry -->
+        <div class="checkout-form-box">
+          <h5 class="form-section-title">Delivery & Customer Details</h5>
+          
+          <div class="input-field-group">
+            <label for="checkout-name" class="field-label">Full Name</label>
+            <input type="text" id="checkout-name" placeholder="e.g., Abdul-Aziz Alidu" required>
+          </div>
+          
+          <div class="input-field-group">
+            <label for="checkout-email" class="field-label">Email Address</label>
+            <input type="email" id="checkout-email" placeholder="name@example.com" required>
+          </div>
+          
+          <div class="input-field-group">
+            <label for="checkout-phone" class="field-label">WhatsApp Number</label>
+            <input type="tel" id="checkout-phone" placeholder="059 816 0732" required>
+          </div>
+          
+          <div class="input-field-group">
+            <label for="checkout-delivery-type" class="field-label">Delivery Zone</label>
+            <select id="checkout-delivery-type">
+              <option value="Dungu">Within UDS Dungu Campus (FREE Delivery)</option>
+              <option value="Outside">Outside Campus / Different Town (Fee communicated shortly)</option>
+            </select>
+          </div>
+          
+          <div class="input-field-group">
+            <label for="checkout-location" class="field-label">Detailed Location</label>
+            <textarea id="checkout-location" rows="3" placeholder="Specify your hall, block, room number, or landmark..." required></textarea>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Locked Layout Footer Action Space -->
+      <div class="drawer-footer">
+        <div class="billing-summary-matrix">
+          <div class="summary-line"><span>Subtotal</span><span id="cart-subtotal">GHS 0.00</span></div>
+          <div class="summary-line"><span>Delivery Fee</span><span id="cart-delivery-cost">FREE (UDS Dungu)</span></div>
+          <hr class="divider-line">
+          <div class="summary-line high-emphasis"><span>Grand Total</span><span id="cart-grand-total">GHS 0.00</span></div>
+        </div>
+        
+       <!-- Smart Multi-Vendor Routing Notice -->
+        <div id="vendor-split-notice" class="vendor-routing-alert hidden"></div>
+        
+        <!-- Tactile Secure Payment Action Button -->
+        <button class="primary-pay-btn" id="execute-checkout-btn">
+          <span class="material-icons-outlined secure-badge-icon">lock</span>
+          <span class="btn-text-label">PAY NOW</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Footer -->
+  <footer class="premium-footer">
+    <div class="footer-content">
+      <p>Contact Support: <strong>0598160732</strong> | Platform Developed by: <strong>Azz Internet Hub</strong></p>
+      <p class="copyright-text">&copy; 2026 ShopSphere. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Script Cache Busting Query Variable -->
+  <script src="app.js?v=1.0.1"></script>
+</body>
+</html>
