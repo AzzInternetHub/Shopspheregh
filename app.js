@@ -13,50 +13,71 @@ let activeGalleryIndices = {};
 let currentSelectedCategory = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Explicitly purge any existing stale client-side cache from previous setups
-  try {
-    localStorage.removeItem("shopsphere_local_cache");
-    localStorage.clear();
-  } catch (e) {
-    console.warn("Storage clear notice:", e);
-  }
-
   initializeApplicationEngine();
   attachUIEventListeners();
 });
 
 async function initializeApplicationEngine() {
+  let hasRenderedFromCache = false;
+
+  // 1. Instant Hydration from local storage (if available)
+  const localCachedPayload = localStorage.getItem("shopsphere_local_cache");
+  if (localCachedPayload) {
+    try {
+      const cachedData = JSON.parse(localCachedPayload);
+      if (cachedData && cachedData.products && cachedData.products.length > 0) {
+        storeDatabase = cachedData;
+        renderAppBranding();
+        renderStorefrontCategories();
+        renderProductGrid(storeDatabase.products);
+        hasRenderedFromCache = true;
+      }
+    } catch (cacheErr) {
+      console.warn("Cache parse notice:", cacheErr);
+    }
+  }
+
+  // 2. Show skeletons only if no cached data was rendered
+  if (!hasRenderedFromCache) {
+    showStorefrontSkeletons();
+  }
+
+  // 3. Background Sync with dynamic timestamp to update cache & UI silently
   try {
     fetch(`${TELEMETRY_ENDPOINT}?action=logVisitor`).catch(() => {});
-    
-    showStorefrontSkeletons();
 
-    // Direct Live Fetch with dynamic timestamp to strictly prevent HTTP/Browser caching
     const response = await fetch(`${TELEMETRY_ENDPOINT}?action=getStoreData&_t=${Date.now()}`);
     const payload = await response.json();
     
     if (payload.success && payload.data) {
       storeDatabase = payload.data;
       
+      // Update persistent local cache
+      localStorage.setItem("shopsphere_local_cache", JSON.stringify(payload.data));
+      
+      // Re-render UI with live catalog data
       renderAppBranding();
       renderStorefrontCategories();
       renderProductGrid(storeDatabase.products);
-    } else {
+    } else if (!hasRenderedFromCache) {
       throw new Error("Invalid payload structure received");
     }
   } catch (error) {
     console.error("Communications error with Apps Script Engine:", error);
     
-    const container = document.getElementById("products-container");
-    if (container) {
-      container.innerHTML = `
-        <div style="grid-column: 1/-1; text-align: center; padding: 3rem 1rem;">
-          <p style="color: #64748b; font-weight: 500; margin-bottom: 1rem;">Unable to connect to live inventory. Please check your connection.</p>
-          <button onclick="initializeApplicationEngine()" style="padding: 0.6rem 1.2rem; background: #0f172a; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
-            Retry
-          </button>
-        </div>
-      `;
+    // Only present error state if there was zero local cache available
+    if (!hasRenderedFromCache && (!storeDatabase.products || storeDatabase.products.length === 0)) {
+      const container = document.getElementById("products-container");
+      if (container) {
+        container.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 3rem 1rem;">
+            <p style="color: #64748b; font-weight: 500; margin-bottom: 1rem;">Unable to connect to live inventory. Please check your connection.</p>
+            <button onclick="initializeApplicationEngine()" style="padding: 0.6rem 1.2rem; background: #0f172a; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+              Retry
+            </button>
+          </div>
+        `;
+      }
     }
   }
 }
