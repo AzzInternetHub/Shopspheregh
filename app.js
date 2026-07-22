@@ -13,6 +13,14 @@ let activeGalleryIndices = {};
 let currentSelectedCategory = null;
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Explicitly purge any existing stale client-side cache from previous setups
+  try {
+    localStorage.removeItem("shopsphere_local_cache");
+    localStorage.clear();
+  } catch (e) {
+    console.warn("Storage clear notice:", e);
+  }
+
   initializeApplicationEngine();
   attachUIEventListeners();
 });
@@ -23,33 +31,33 @@ async function initializeApplicationEngine() {
     
     showStorefrontSkeletons();
 
-    // Fast Cache Hydration from Local Storage
-    const localCachedPayload = localStorage.getItem("shopsphere_local_cache");
-    if (localCachedPayload) {
-      try {
-        storeDatabase = JSON.parse(localCachedPayload);
-        renderAppBranding();
-        renderStorefrontCategories();
-        renderProductGrid(storeDatabase.products);
-      } catch (cacheErr) {
-        console.error("Cache parsing conflict:", cacheErr);
-      }
-    }
-
-    // Live Sync with dynamic cache-busting timestamp to bypass browser cache
+    // Direct Live Fetch with dynamic timestamp to strictly prevent HTTP/Browser caching
     const response = await fetch(`${TELEMETRY_ENDPOINT}?action=getStoreData&_t=${Date.now()}`);
     const payload = await response.json();
     
-    if (payload.success) {
+    if (payload.success && payload.data) {
       storeDatabase = payload.data;
-      localStorage.setItem("shopsphere_local_cache", JSON.stringify(payload.data));
       
       renderAppBranding();
       renderStorefrontCategories();
       renderProductGrid(storeDatabase.products);
+    } else {
+      throw new Error("Invalid payload structure received");
     }
   } catch (error) {
     console.error("Communications error with Apps Script Engine:", error);
+    
+    const container = document.getElementById("products-container");
+    if (container) {
+      container.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; padding: 3rem 1rem;">
+          <p style="color: #64748b; font-weight: 500; margin-bottom: 1rem;">Unable to connect to live inventory. Please check your connection.</p>
+          <button onclick="initializeApplicationEngine()" style="padding: 0.6rem 1.2rem; background: #0f172a; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            Retry
+          </button>
+        </div>
+      `;
+    }
   }
 }
 
@@ -534,7 +542,6 @@ async function finalizeSystemOrder(paystackRef, name, email, phone, itemSubtotal
     customerCart = [];
     synchronizeCartState();
     document.getElementById("cart-drawer").classList.add("hidden");
-    localStorage.removeItem("shopsphere_local_cache");
 
     window.location.href = `https://wa.me/${targetPhone}?text=${encodeURIComponent(messageText)}`;
     
