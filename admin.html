@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ShopSphere Vendor Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(23, 31, 48, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+      --accent-solid: #6366f1;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --input-bg: #111827;
+      --input-border: #1f293d;
+      --danger: #ef4444;
+      --success: #10b981;
+      --radius: 16px;
+    }
+
+    * { 
+      box-sizing: border-box; 
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; 
+      margin: 0; 
+      padding: 0; 
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body { 
+      background-color: var(--bg); 
+      color: var(--text); 
+      padding: 12px 12px 80px 12px;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(217, 70, 239, 0.08) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    .container { max-width: 850px; margin: 0 auto; }
+
+    .card { 
+      background: var(--card-bg); 
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      padding: 20px 16px; 
+      border-radius: var(--radius); 
+      box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3); 
+      margin-bottom: 16px; 
+    }
+
+    @media (min-width: 640px) {
+      body { padding: 24px 16px; }
+      .card { padding: 28px; margin-bottom: 24px; }
+    }
+
+    h2, h3 { 
+      color: var(--text); 
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    h2 { font-size: 20px; margin-bottom: 12px; }
+    h3 { font-size: 17px; margin-bottom: 12px; }
+
+    .brand-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .form-group { margin-bottom: 16px; }
+    
+    label { 
+      display: block; 
+      font-weight: 600; 
+      margin-bottom: 6px; 
+      font-size: 12px; 
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input, select, textarea { 
+      width: 100%; 
+      padding: 12px 14px; 
+      background: var(--input-bg);
+      border: 1px solid var(--input-border); 
+      border-radius: 10px; 
+      font-size: 14px; 
+      color: var(--text);
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent-solid);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+    }
+
+    button { 
+      background: var(--accent); 
+      color: white; 
+      border: none; 
+      padding: 12px 20px; 
+      border-radius: 10px; 
+      font-weight: 700; 
+      font-size: 14px;
+      cursor: pointer; 
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button:hover { 
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+    }
+
+    .btn-block { width: 100%; }
+    .hidden { display: none !important; }
+
+    /* MOBILE NAVIGATION TABS BAR */
+    .view-nav {
+      display: flex;
+      background: rgba(17, 24, 39, 0.9);
+      border: 1px solid var(--input-border);
+      padding: 4px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+
+    .nav-btn {
+      flex: 1;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      box-shadow: none;
+    }
+
+    .nav-btn.active-view {
+      background: var(--accent-solid);
+      color: white;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+    }
+
+    /* Image Upload Tabs */
+    .tab-container {
+      display: flex;
+      background: var(--input-bg);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--input-border);
+      margin-bottom: 12px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      box-shadow: none;
+      color: var(--text-muted);
+      padding: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+    }
+
+    .tab-btn.active-tab {
+      background: var(--accent-solid);
+      color: white;
+    }
+
+    /* Inventory Items */
+    .product-list { display: grid; gap: 12px; }
+    
+    .product-item { 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      padding: 12px; 
+      background: rgba(17, 24, 39, 0.8);
+      border: 1px solid var(--input-border); 
+      border-radius: 12px; 
+    }
+
+    .product-img { 
+      width: 48px; 
+      height: 48px; 
+      object-fit: cover; 
+      border-radius: 8px; 
+      margin-right: 12px; 
+      border: 1px solid var(--card-border);
+    }
+
+    .flex-center { display: flex; align-items: center; }
+
+    .action-btn {
+      padding: 6px 10px;
+      font-size: 11px;
+      border-radius: 6px;
+    }
+
+    .edit-btn { background: #334155; box-shadow: none; }
+    .danger-btn { background: var(--danger); margin-left: 6px; box-shadow: none; }
+
+    /* ORDER CARDS STYLING */
+    .order-card {
+      background: rgba(17, 24, 39, 0.85);
+      border: 1px solid var(--input-border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .order-ref {
+      font-weight: 700;
+      font-size: 13px;
+      color: #818cf8;
+    }
+
+    .order-date {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .order-detail {
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .order-detail span {
+      color: var(--text-muted);
+    }
+
+    .order-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      margin-top: 6px;
+    }
+
+    /* FULLSCREEN OVERLAY LOADING SPINNER */
+    #loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #8b5cf6;
+      border-right-color: #d946ef;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #loading-text {
+      margin-top: 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOADING MODAL OVERLAY -->
+  <div id="loading-overlay" class="hidden">
+    <div class="spinner"></div>
+    <div id="loading-text">Processing request...</div>
+  </div>
+
+  <div class="container">
+    
+    <!-- LOGIN FORM CARD -->
+    <div id="login-card" class="card">
+      <span class="brand-badge">ShopSphere Partner</span>
+      <h2>Seller Portal Access</h2>
+      <div class="form-group">
+        <label>Select Your Store</label>
+        <select id="vendor-select">
+          <option value="Alpha Tech">Alpha Tech</option>
+          <option value="Spike's Laptops">Spike's Laptops</option>
+          <option value="Siya Empire">Siya Empire</option>
+          <option value="Twin Aura">Twin Aura</option>
+          <option value="Innocent iSTORE">Innocent iSTORE</option>
+          <option value="Finest Luxe">Finest Luxe</option>
+          <option value="Endlessformat">Endlessformat</option>
+          <option value="Azz Internet Hub">Azz Internet Hub</option>
+          <option value="ShopSphere Official">ShopSphere Official</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Passkey / PIN</label>
+        <input type="password" id="vendor-passkey" placeholder="Enter security key">
+      </div>
+      <button onclick="loginVendor()" class="btn-block">Login to Dashboard</button>
+    </div>
+
+    <!-- MAIN DASHBOARD PANEL -->
+    <div id="dashboard-panel" class="hidden">
+      
+      <!-- HEADER CARD -->
+      <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span class="brand-badge">Live Console</span>
+          <h2 id="active-vendor-title" style="margin:0;">Vendor Dashboard</h2>
+        </div>
+        <button onclick="logoutVendor()" class="edit-btn action-btn">Logout</button>
+      </div>
+
+      <!-- MAIN SECTION SWITCHER TABS -->
+      <div class="view-nav">
+        <button id="nav-products" class="nav-btn active-view" onclick="switchMainView('products')">📦 Inventory</button>
+        <button id="nav-orders" class="nav-btn" onclick="switchMainView('orders')">🛍️ Orders</button>
+      </div>
+
+      <!-- PRODUCTS SECTION -->
+      <div id="section-products">
+        
+        <!-- ADD/EDIT PRODUCT FORM -->
+        <div class="card">
+          <h3 id="form-title">Add / Edit Product</h3>
+          <form id="product-form" onsubmit="handleSaveProduct(event)">
+            <input type="hidden" id="p-rawId">
+            
+            <div class="form-group">
+              <label>Product Title</label>
+              <input type="text" id="p-title" required placeholder="e.g. iPhone 15 Pro Max 256GB">
+            </div>
+
+            <div style="display:flex; gap:10px;">
+              <div class="form-group" style="flex:1;">
+                <label>Category</label>
+                <input type="text" id="p-category" required placeholder="Electronics">
+              </div>
+              <div class="form-group" style="flex:1;">
+                <label>Status</label>
+                <select id="p-status">
+                  <option value="In Stock">In Stock</option>
+                  <option value="Out of Stock">Out of Stock</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+              <div class="form-group" style="flex:1;">
+                <label>Selling Price (GHS)</label>
+                <input type="number" step="0.01" id="p-salePrice" required placeholder="1200">
+              </div>
+              <div class="form-group" style="flex:1;">
+                <label>Original Price (GHS)</label>
+                <input type="number" step="0.01" id="p-originalPrice" placeholder="1500">
+              </div>
+            </div>
+            
+            <!-- IMAGE INPUT FIELD WITH TOGGLE TABS -->
+            <div class="form-group">
+              <label>Product Imagery</label>
+              <div class="tab-container">
+                <button type="button" id="tab-file" class="tab-btn active-tab" onclick="setImageMode('file')">📷 Phone Photos</button>
+                <button type="button" id="tab-link" class="tab-btn" onclick="setImageMode('link')">🔗 Image Link</button>
+              </div>
+
+              <div id="file-upload-container">
+                <input type="file" id="p-file-input" accept="image/*" multiple style="padding: 8px;">
+                <p style="font-size:11px; color:var(--text-muted); margin-top:4px;">Upload directly from phone gallery/camera.</p>
+              </div>
+
+              <div id="link-upload-container" class="hidden">
+                <input type="text" id="p-images" placeholder="https://image1.jpg, https://image2.jpg">
+                <p style="font-size:11px; color:var(--text-muted); margin-top:4px;">Paste image links separated by commas.</p>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Overview Description</label>
+              <textarea id="p-description" rows="3" required placeholder="Item description, warranty..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Specifications</label>
+              <textarea id="p-specifications" rows="2" placeholder="e.g. 256GB Storage, Space Black"></textarea>
+            </div>
+
+            <button type="submit" id="save-btn" class="btn-block">Save Product</button>
+          </form>
+        </div>
+
+        <!-- INVENTORY LIST CARD -->
+        <div class="card">
+          <h3>Current Store Inventory</h3>
+          <div id="product-list-container" class="product-list">
+            <p style="color:var(--text-muted);">Loading products...</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ORDERS SECTION (Google Sheet Orders Tab View) -->
+      <div id="section-orders" class="hidden">
+        <div class="card">
+          <h3>Customer Orders & Sales Log</h3>
+          <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Synced directly from your store Google Sheet orders log.</p>
+          
+          <div id="orders-list-container">
+            <p style="color:var(--text-muted);">Fetching customer orders...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
