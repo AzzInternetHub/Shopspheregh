@@ -460,11 +460,7 @@ function initPaystackTransaction() {
   }
 
   let subtotal = customerCart.reduce((acc, entry) => acc + (entry.product.salePrice * entry.quantity), 0);
-
   const activeProduct = customerCart[0].product;
-  const targetSplitCode = (activeProduct.paystackSplitCode && activeProduct.paystackSplitCode.toString().trim() !== "") 
-    ? activeProduct.paystackSplitCode.toString().replace(/[\r\n\s\t]+/g, '') 
-    : "MAIN";
 
   const paystackPayload = {
     key: PAYSTACK_PUBLIC_KEY,
@@ -487,7 +483,13 @@ function initPaystackTransaction() {
     }
   };
 
-  if (targetSplitCode.toUpperCase() !== "MAIN") {
+  // Temporarily bypass passing split_code until Paystack subaccounts finish verification
+  // All funds route directly to the main account.
+  const targetSplitCode = (activeProduct.paystackSplitCode && activeProduct.paystackSplitCode.toString().trim() !== "") 
+    ? activeProduct.paystackSplitCode.toString().replace(/[\r\n\s\t]+/g, '') 
+    : "MAIN";
+
+  if (targetSplitCode.toUpperCase() !== "MAIN" && !targetSplitCode.toUpperCase().startsWith("SPL_")) {
     paystackPayload.split_code = targetSplitCode;
   }
 
