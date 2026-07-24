@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -8,7 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root {
+    /* CSS THEME VARIABLES FOR LIGHT AND DARK MODE */
+    :root[data-theme="dark"] {
       --bg: #0b0f19;
       --card-bg: rgba(23, 31, 48, 0.75);
       --card-border: rgba(255, 255, 255, 0.08);
@@ -21,6 +22,25 @@
       --danger: #ef4444;
       --success: #10b981;
       --radius: 16px;
+      --gradient-bg-1: rgba(99, 102, 241, 0.12);
+      --gradient-bg-2: rgba(217, 70, 239, 0.08);
+    }
+
+    :root[data-theme="light"] {
+      --bg: #f1f5f9;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --card-border: rgba(0, 0, 0, 0.08);
+      --accent: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #c026d3 100%);
+      --accent-solid: #4f46e5;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --input-bg: #ffffff;
+      --input-border: #cbd5e1;
+      --danger: #dc2626;
+      --success: #059669;
+      --radius: 16px;
+      --gradient-bg-1: rgba(99, 102, 241, 0.08);
+      --gradient-bg-2: rgba(217, 70, 239, 0.05);
     }
 
     * { 
@@ -28,7 +48,7 @@
       font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; 
       margin: 0; 
       padding: 0; 
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: background-color 0.2s, border-color 0.2s, color 0.2s;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -38,8 +58,8 @@
       padding: 12px 12px 80px 12px;
       min-height: 100vh;
       background-image: 
-        radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
-        radial-gradient(circle at 90% 90%, rgba(217, 70, 239, 0.08) 0%, transparent 40%);
+        radial-gradient(circle at 10% 10%, var(--gradient-bg-1) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, var(--gradient-bg-2) 0%, transparent 40%);
       background-attachment: fixed;
     }
 
@@ -52,7 +72,7 @@
       border: 1px solid var(--card-border);
       padding: 20px 16px; 
       border-radius: var(--radius); 
-      box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3); 
+      box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1); 
       margin-bottom: 16px; 
     }
 
@@ -132,13 +152,22 @@
       box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
     }
 
+    .theme-toggle-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 12px;
+      box-shadow: none;
+    }
+
     .btn-block { width: 100%; }
     .hidden { display: none !important; }
 
     /* MOBILE NAVIGATION TABS BAR */
     .view-nav {
       display: flex;
-      background: rgba(17, 24, 39, 0.9);
+      background: var(--input-bg);
       border: 1px solid var(--input-border);
       padding: 4px;
       border-radius: 12px;
@@ -197,7 +226,7 @@
       align-items: center; 
       justify-content: space-between; 
       padding: 12px; 
-      background: rgba(17, 24, 39, 0.8);
+      background: var(--input-bg);
       border: 1px solid var(--input-border); 
       border-radius: 12px; 
     }
@@ -219,12 +248,12 @@
       border-radius: 6px;
     }
 
-    .edit-btn { background: #334155; box-shadow: none; }
+    .edit-btn { background: var(--input-border); color: var(--text); box-shadow: none; }
     .danger-btn { background: var(--danger); margin-left: 6px; box-shadow: none; }
 
     /* ORDER CARDS STYLING */
     .order-card {
-      background: rgba(17, 24, 39, 0.85);
+      background: var(--input-bg);
       border: 1px solid var(--input-border);
       border-radius: 12px;
       padding: 14px;
@@ -237,7 +266,7 @@
       align-items: center;
       margin-bottom: 8px;
       padding-bottom: 8px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid var(--input-border);
     }
 
     .order-ref {
@@ -307,7 +336,7 @@
       margin-top: 16px;
       font-size: 14px;
       font-weight: 600;
-      color: var(--text);
+      color: #ffffff;
     }
   </style>
 </head>
@@ -323,7 +352,10 @@
     
     <!-- LOGIN FORM CARD -->
     <div id="login-card" class="card">
-      <span class="brand-badge">ShopSphere Partner</span>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="brand-badge">ShopSphere Partner</span>
+        <button onclick="toggleTheme()" class="theme-toggle-btn" id="theme-btn-login">☀️ Light</button>
+      </div>
       <h2>Seller Portal Access</h2>
       <div class="form-group">
         <label>Select Your Store</label>
@@ -355,7 +387,10 @@
           <span class="brand-badge">Live Console</span>
           <h2 id="active-vendor-title" style="margin:0;">Vendor Dashboard</h2>
         </div>
-        <button onclick="logoutVendor()" class="edit-btn action-btn">Logout</button>
+        <div style="display:flex; gap:8px;">
+          <button onclick="toggleTheme()" class="theme-toggle-btn" id="theme-btn-dash">☀️ Light</button>
+          <button onclick="logoutVendor()" class="edit-btn action-btn">Logout</button>
+        </div>
       </div>
 
       <!-- MAIN SECTION SWITCHER TABS -->
@@ -413,7 +448,7 @@
 
               <div id="file-upload-container">
                 <input type="file" id="p-file-input" accept="image/*" multiple style="padding: 8px;">
-                <p style="font-size:11px; color:var(--text-muted); margin-top:4px;">Upload directly from phone gallery/camera.</p>
+                <p style="font-size:11px; color:var(--text-muted); margin-top:4px;">Upload directly from gallery/camera (Auto-compressed for high speed).</p>
               </div>
 
               <div id="link-upload-container" class="hidden">
@@ -446,7 +481,7 @@
 
       </div>
 
-      <!-- ORDERS SECTION (Google Sheet Orders Tab View) -->
+      <!-- ORDERS SECTION -->
       <div id="section-orders" class="hidden">
         <div class="card">
           <h3>Customer Orders & Sales Log</h3>
