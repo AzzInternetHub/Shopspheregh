@@ -17,7 +17,7 @@
   <meta property="og:type" content="website">
   
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="styles.css?v=1.0.1">
+  <link rel="stylesheet" href="styles.css?v=1.0.2">
   
   <!-- Fonts & Material Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -75,7 +75,7 @@
     <section class="section-container">
       <div class="section-header-flex">
         <h3 class="section-title">Shop By Category</h3>
-        <button id="reset-category-btn" class="category-reset-btn hidden">Show All Products</button>
+        <button id="reset-category-btn" class="category-reset-btn hidden" onclick="resetCategoryFilter()">Show All Products</button>
       </div>
       <div class="categories-grid" id="categories-container">
         <!-- Injected via JavaScript App Engine -->
@@ -132,10 +132,10 @@
       <!-- Butter-Smooth Scrollable Content Space -->
       <div class="drawer-scrollable">
         <div id="cart-items-wrapper">
-          <!-- Interactive multi-vendor item rows dynamically injected here -->
+          <!-- Dynamic Cart Items -->
         </div>
         
-        <!-- Premium Checkout System Entry -->
+        <!-- Delivery & Customer Details Form -->
         <div class="checkout-form-box">
           <h5 class="form-section-title">Delivery & Customer Details</h5>
           
@@ -178,10 +178,8 @@
           <div class="summary-line high-emphasis"><span>Grand Total</span><span id="cart-grand-total">GHS 0.00</span></div>
         </div>
         
-       <!-- Smart Multi-Vendor Routing Notice -->
         <div id="vendor-split-notice" class="vendor-routing-alert hidden"></div>
         
-        <!-- Tactile Secure Payment Action Button -->
         <button class="primary-pay-btn" id="execute-checkout-btn">
           <span class="material-icons-outlined secure-badge-icon">lock</span>
           <span class="btn-text-label">PAY NOW</span>
@@ -198,7 +196,36 @@
     </div>
   </footer>
 
-  <!-- Script Cache Busting Query Variable -->
-  <script src="app.js?v=1.0.1"></script>
+  <script src="app.js?v=1.0.2"></script>
+  
+  <!-- Lightbox Fullscreen Listener Engine -->
+  <script>
+    document.addEventListener("click", function(e) {
+      if (e.target && e.target.id === "main-modal-img") {
+        const fsModal = document.getElementById("fullscreen-image-modal");
+        const fsImg = document.getElementById("fullscreen-active-img");
+        if (fsModal && fsImg) {
+          fsImg.src = e.target.src;
+          fsModal.classList.remove("hidden");
+        }
+      }
+    });
+
+    const closeFsBtn = document.getElementById("close-fullscreen-img");
+    if (closeFsBtn) {
+      closeFsBtn.onclick = function() {
+        document.getElementById("fullscreen-image-modal").classList.add("hidden");
+      };
+    }
+
+    const fsModal = document.getElementById("fullscreen-image-modal");
+    if (fsModal) {
+      fsModal.onclick = function(e) {
+        if (e.target === fsModal || e.target.classList.contains("fullscreen-img-stage")) {
+          fsModal.classList.add("hidden");
+        }
+      };
+    }
+  </script>
 </body>
 </html>
