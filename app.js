@@ -272,7 +272,7 @@ function initializePaystackCheckout() {
       ]
     },
     callback: function(response) {
-      // Send Order Payload to Backend
+      // 1. Send Order Payload to Backend
       fetch(TELEMETRY_ENDPOINT, {
         method: "POST",
         body: JSON.stringify({
@@ -290,10 +290,40 @@ function initializePaystackCheckout() {
         })
       });
 
-      alert(`Payment successful! Reference: ${response.reference}. Your order has been placed.`);
+      // 2. Determine Vendor WhatsApp Number
+      const vendorPhone = sampleProduct.vendorPhone || storeDatabase.settings.support_whatsapp || "233598160732";
+      const cleanPhone = vendorPhone.replace(/[^0-9]/g, "");
+
+      // 3. Format Prefilled WhatsApp Message
+      const itemsList = customerCart.map(i => `• ${i.product.title} (Qty: ${i.quantity})`).join("\n");
+      const messageText = 
+`*NEW ORDER PLACED ON SHOPSPHERE* 🛒
+
+*Order Ref:* ${response.reference}
+*Merchant:* ${sampleProduct.vendorName || "ShopSphere Official"}
+
+*Customer Details:*
+• *Name:* ${name}
+• *Phone:* ${phone}
+• *Delivery Zone:* ${deliveryType}
+• *Location:* ${location}
+
+*Items Ordered:*
+${itemsList}
+
+*Total Paid:* GHS ${totalAmount.toFixed(2)}
+
+_Payment verified via Paystack._`;
+
+      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(messageText)}`;
+
+      // 4. Reset Cart and Redirect Automatically to WhatsApp
       customerCart = [];
       updateCartUI();
-      document.getElementById("cart-drawer").classList.add("hidden");
+      const cartDrawer = document.getElementById("cart-drawer");
+      if (cartDrawer) cartDrawer.classList.add("hidden");
+
+      window.location.href = whatsappUrl;
     },
     onClose: function() {
       alert("Payment canceled.");
