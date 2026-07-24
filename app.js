@@ -300,13 +300,18 @@ function initializePaystackCheckout() {
     }
   };
 
-  // Only pass subaccount if a valid, non-MAIN subaccount code exists in your product DB
+  // Safe routing for ACCT_ vs SPL_ codes
   if (
     sampleProduct.paystackSplitCode && 
     sampleProduct.paystackSplitCode !== "MAIN" && 
     sampleProduct.paystackSplitCode.trim() !== ""
   ) {
-    paystackOptions.subaccount = sampleProduct.paystackSplitCode.trim();
+    const code = sampleProduct.paystackSplitCode.trim();
+    if (code.startsWith("ACCT_")) {
+      paystackOptions.subaccount = code;
+    } else if (code.startsWith("SPL_")) {
+      paystackOptions.split_code = code;
+    }
   }
 
   const handler = PaystackPop.setup(paystackOptions);
