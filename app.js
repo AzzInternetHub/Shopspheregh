@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function initializeApplicationEngine() {
   let hasRenderedFromCache = false;
 
-  // 1. Instant Hydration from local storage (if available)
+  // 1. Instant Hydration from local storage for fast page loads
   const localCachedPayload = localStorage.getItem("shopsphere_local_cache");
   if (localCachedPayload) {
     try {
@@ -42,30 +42,36 @@ async function initializeApplicationEngine() {
     showStorefrontSkeletons();
   }
 
-  // 3. Background Sync with dynamic timestamp to update cache & UI silently
+  // 3. Live Sync: Pass bypassCache=true and dynamic timestamp (_t) to kill stale caches
   try {
     fetch(`${TELEMETRY_ENDPOINT}?action=logVisitor`).catch(() => {});
 
-    const response = await fetch(`${TELEMETRY_ENDPOINT}?action=getStoreData&_t=${Date.now()}`);
+    const response = await fetch(`${TELEMETRY_ENDPOINT}?action=getStoreData&bypassCache=true&_t=${Date.now()}`);
     const payload = await response.json();
     
     if (payload.success && payload.data) {
       storeDatabase = payload.data;
       
-      // Update persistent local cache
+      // Overwrite persistent local cache with live Sheet data
       localStorage.setItem("shopsphere_local_cache", JSON.stringify(payload.data));
       
       // Re-render UI with live catalog data
       renderAppBranding();
       renderStorefrontCategories();
-      renderProductGrid(storeDatabase.products);
+      
+      // Maintain category filter state if user was filtering during sync
+      if (currentSelectedCategory) {
+        const filtered = storeDatabase.products.filter(p => p.category.toLowerCase() === currentSelectedCategory.toLowerCase());
+        renderProductGrid(filtered);
+      } else {
+        renderProductGrid(storeDatabase.products);
+      }
     } else if (!hasRenderedFromCache) {
       throw new Error("Invalid payload structure received");
     }
   } catch (error) {
     console.error("Communications error with Apps Script Engine:", error);
     
-    // Only present error state if there was zero local cache available
     if (!hasRenderedFromCache && (!storeDatabase.products || storeDatabase.products.length === 0)) {
       const container = document.getElementById("products-container");
       if (container) {
@@ -73,7 +79,7 @@ async function initializeApplicationEngine() {
           <div style="grid-column: 1/-1; text-align: center; padding: 3rem 1rem;">
             <p style="color: #64748b; font-weight: 500; margin-bottom: 1rem;">Unable to connect to live inventory. Please check your connection.</p>
             <button onclick="initializeApplicationEngine()" style="padding: 0.6rem 1.2rem; background: #0f172a; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
-              Retry
+              Retry Connection
             </button>
           </div>
         `;
@@ -104,7 +110,7 @@ function showStorefrontSkeletons() {
 
 function renderAppBranding() {
   const mottoElement = document.getElementById("branding-motto");
-  if(storeDatabase.settings.company_motto && mottoElement) {
+  if(storeDatabase.settings && storeDatabase.settings.company_motto && mottoElement) {
     mottoElement.textContent = storeDatabase.settings.company_motto;
   }
 }
@@ -114,12 +120,14 @@ function renderStorefrontCategories() {
   if(!container) return;
   container.innerHTML = "";
 
+  if (!storeDatabase.categories) return;
+
   storeDatabase.categories.forEach(cat => {
     const card = document.createElement("div");
     card.className = `category-luxury-card ${currentSelectedCategory === cat.name ? 'active-cat' : ''}`;
     card.onclick = () => filterCatalogByCategory(cat.name);
     card.innerHTML = `
-      <img src="${cat.image}" class="category-card-img" alt="${cat.name}" loading="lazy">
+      <img src="${cat.image || 'https://via.placeholder.com/150'}" class="category-card-img" alt="${cat.name}" loading="lazy">
       <div class="category-card-info">
         <h4>${cat.name}</h4>
       </div>
@@ -139,7 +147,7 @@ function renderProductGrid(productsList) {
   }
 
   productsList.forEach(product => {
-    const imageArray = product.images.split(",");
+    const imageArray = product.images ? product.images.split(",") : [];
     const primaryImage = imageArray[0] ? imageArray[0].trim() : "https://via.placeholder.com/400";
     
     const discountTag = product.originalPrice > product.salePrice 
@@ -204,7 +212,7 @@ window.triggerProductLightbox = function(productId) {
 
   const modal = document.getElementById("product-modal");
   const modalContent = document.getElementById("modal-product-content");
-  const images = item.images.split(",").map(url => url.trim());
+  const images = item.images ? item.images.split(",").map(url => url.trim()) : ["https://via.placeholder.com/400"];
   
   activeGalleryIndices[item.id] = 0;
 
@@ -252,8 +260,10 @@ window.triggerProductLightbox = function(productId) {
 window.updateLightboxActiveView = function(productId, index, url) {
   activeGalleryIndices[productId] = index;
   const mainView = document.getElementById("lightbox-main-view");
-  mainView.src = url;
-  document.getElementById("gallery-current-idx").textContent = index + 1;
+  if (mainView) mainView.src = url;
+  
+  const idxTag = document.getElementById("gallery-current-idx");
+  if (idxTag) idxTag.textContent = index + 1;
   
   const viewscreen = document.querySelector(".hero-viewscreen");
   if(viewscreen) viewscreen.onclick = () => openFullscreenImageViewer(url);
@@ -362,7 +372,7 @@ function synchronizeCartState() {
     document.getElementById("cart-grand-total").textContent = `GHS ${subtotal.toFixed(2)}`;
   } else {
     document.getElementById("cart-delivery-cost").textContent = "Communicated Shortly";
-    document.getElementById("cart-grand-total").textContent = `GHS ${subtotal.toFixed(2)} + Fee`;
+    document.getElementById("cart-grand-total").textContent = `GHS ${subtotal.toFixed(2)} (+ Delivery Fee)`;
   }
 
   if (detectedSplits.size > 1) {
@@ -422,17 +432,41 @@ function attachUIEventListeners() {
 
   document.getElementById("checkout-delivery-type").onchange = () => synchronizeCartState();
 
-  document.getElementById("global-search").addEventListener("input", (e) => {
+  const searchInput = document.getElementById("global-search");
+  const dropdown = document.getElementById("search-suggestions");
+
+  searchInput.addEventListener("input", (e) => {
     const query = e.target.value.toLowerCase().trim();
     if(query === "") {
+      if(dropdown) dropdown.classList.add("hidden");
       renderProductGrid(storeDatabase.products);
       return;
     }
+
     const filtered = storeDatabase.products.filter(p => 
       p.title.toLowerCase().includes(query) || 
       p.category.toLowerCase().includes(query)
     );
+
     renderProductGrid(filtered);
+
+    // Dynamic dropdown completion rendering
+    if (dropdown && filtered.length > 0) {
+      dropdown.innerHTML = filtered.slice(0, 5).map(item => `
+        <div class="suggestion-item" onclick="triggerProductLightbox('${item.id}')" style="padding: 0.5rem 1rem; cursor: pointer; border-bottom: 1px solid #f1f5f9;">
+          <strong>${item.title}</strong> - <span style="font-size: 12px; color: #64748b;">GHS ${item.salePrice}</span>
+        </div>
+      `).join('');
+      dropdown.classList.remove("hidden");
+    } else if (dropdown) {
+      dropdown.classList.add("hidden");
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (dropdown && !searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.add("hidden");
+    }
   });
 
   document.getElementById("execute-checkout-btn").onclick = () => initPaystackTransaction();
@@ -483,13 +517,11 @@ function initPaystackTransaction() {
     }
   };
 
-  // Temporarily bypass passing split_code until Paystack subaccounts finish verification
-  // All funds route directly to the main account.
   const targetSplitCode = (activeProduct.paystackSplitCode && activeProduct.paystackSplitCode.toString().trim() !== "") 
     ? activeProduct.paystackSplitCode.toString().replace(/[\r\n\s\t]+/g, '') 
     : "MAIN";
 
-  if (targetSplitCode.toUpperCase() !== "MAIN" && !targetSplitCode.toUpperCase().startsWith("SPL_")) {
+  if (targetSplitCode.toUpperCase() !== "MAIN" && targetSplitCode.toUpperCase().startsWith("SPL_")) {
     paystackPayload.split_code = targetSplitCode;
   }
 
@@ -574,7 +606,7 @@ async function finalizeSystemOrder(paystackRef, name, email, phone, itemSubtotal
   }
 }
 
-// Unregister Service Worker if active to prevent persistent offline caching
+// Unregister Service Workers to avoid aggressive offline service worker caching
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.getRegistrations().then(registrations => {
     for (let registration of registrations) {
