@@ -3,14 +3,43 @@ const TELEMETRY_ENDPOINT = "https://script.google.com/macros/s/AKfycbyhPV74CWRyQ
 let activeVendor = localStorage.getItem("shopsphere_vendor_name") || "";
 let activePasskey = localStorage.getItem("shopsphere_vendor_passkey") || "";
 let vendorProducts = [];
-let selectedImageMode = "file"; // 'file' or 'link'
+let selectedImageMode = "file";
 
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   if (activeVendor && activePasskey) {
     verifyAndLoadDashboard();
   }
 });
 
+// =========================================================================
+// LIGHT / DARK MODE TOGGLE SYSTEM
+// =========================================================================
+function initTheme() {
+  const savedTheme = localStorage.getItem("shopsphere_theme") || "dark";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+  updateThemeButtons(savedTheme);
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute("data-theme");
+  const newTheme = currentTheme === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", newTheme);
+  localStorage.setItem("shopsphere_theme", newTheme);
+  updateThemeButtons(newTheme);
+}
+
+function updateThemeButtons(theme) {
+  const label = theme === "dark" ? "☀️ Light" : "🌙 Dark";
+  const loginBtn = document.getElementById("theme-btn-login");
+  const dashBtn = document.getElementById("theme-btn-dash");
+  if (loginBtn) loginBtn.innerText = label;
+  if (dashBtn) dashBtn.innerText = label;
+}
+
+// =========================================================================
+// UI HELPERS
+// =========================================================================
 function setImageMode(mode) {
   selectedImageMode = mode;
   const fileContainer = document.getElementById("file-upload-container");
@@ -23,16 +52,28 @@ function setImageMode(mode) {
     linkContainer.classList.add("hidden");
     tabFile.classList.add("active-tab");
     tabLink.classList.remove("active-tab");
-    document.getElementById("p-images").value = ""; // Clear text link if switching to file
+    document.getElementById("p-images").value = ""; 
   } else {
     linkContainer.classList.remove("hidden");
     fileContainer.classList.add("hidden");
     tabLink.classList.add("active-tab");
     tabFile.classList.remove("active-tab");
-    document.getElementById("p-file-input").value = ""; // Clear selected files if switching to link
+    document.getElementById("p-file-input").value = ""; 
   }
 }
 
+function showLoading(msg) {
+  document.getElementById("loading-text").innerText = msg || "Processing request...";
+  document.getElementById("loading-overlay").classList.remove("hidden");
+}
+
+function hideLoading() {
+  document.getElementById("loading-overlay").classList.add("hidden");
+}
+
+// =========================================================================
+// AUTHENTICATION
+// =========================================================================
 async function loginVendor() {
   const vendor = document.getElementById("vendor-select").value;
   const passkey = document.getElementById("vendor-passkey").value.trim();
@@ -41,6 +82,8 @@ async function loginVendor() {
     alert("Please enter passkey");
     return;
   }
+
+  showLoading("Authenticating...");
 
   try {
     const res = await fetch(`${TELEMETRY_ENDPOINT}?action=vendorLogin&vendor=${encodeURIComponent(vendor)}&passkey=${encodeURIComponent(passkey)}`);
@@ -57,6 +100,8 @@ async function loginVendor() {
     }
   } catch (err) {
     alert("Connection error: " + err.message);
+  } finally {
+    hideLoading();
   }
 }
 
@@ -77,23 +122,27 @@ async function verifyAndLoadDashboard() {
   await fetchVendorInventory();
 }
 
+// =========================================================================
+// INVENTORY DATA MANAGEMENT
+// =========================================================================
 async function fetchVendorInventory() {
   const container = document.getElementById("product-list-container");
-  container.innerHTML = "<p style='color:#64748b;'>Fetching inventory from Google Sheet...</p>";
+  container.innerHTML = "<p style='color:var(--text-muted);'>Fetching inventory from Google Sheet...</p>";
 
   try {
-    const res = await fetch(`${TELEMETRY_ENDPOINT}?action=getVendorProducts&vendor=${encodeURIComponent(activeVendor)}&passkey=${encodeURIComponent(activePasskey)}`);
+    // Added timestamp cache buster (_t) for instantaneous updates
+    const res = await fetch(`${TELEMETRY_ENDPOINT}?action=getVendorProducts&vendor=${encodeURIComponent(activeVendor)}&passkey=${encodeURIComponent(activePasskey)}&_t=${Date.now()}`);
     const data = await res.json();
 
     if (data.success) {
-      vendorProducts = data.products;
+      vendorProducts = data.products || [];
       renderVendorProducts();
     } else {
       alert("Session expired or unauthorized.");
       logoutVendor();
     }
   } catch (err) {
-    container.innerHTML = "<p style='color:#ef4444;'>Failed to load products.</p>";
+    container.innerHTML = "<p style='color:var(--danger);'>Failed to load products.</p>";
   }
 }
 
@@ -102,7 +151,7 @@ function renderVendorProducts() {
   container.innerHTML = "";
 
   if (vendorProducts.length === 0) {
-    container.innerHTML = "<p style='color:#64748b;'>No products uploaded yet.</p>";
+    container.innerHTML = "<p style='color:var(--text-muted);'>No products uploaded yet.</p>";
     return;
   }
 
@@ -114,13 +163,13 @@ function renderVendorProducts() {
       <div class="flex-center">
         <img src="${firstImg}" class="product-img" alt="${p.title}">
         <div>
-          <strong>${p.title}</strong>
-          <p style="font-size:12px; color:#64748b;">${p.category} | GHS ${p.salePrice} | ${p.status}</p>
+          <strong>[${p.rawId}] ${p.title}</strong>
+          <p style="font-size:12px; color:var(--text-muted);">${p.category} | GHS ${p.salePrice} | ${p.status}</p>
         </div>
       </div>
       <div>
-        <button onclick="editProduct('${p.rawId}')">Edit</button>
-        <button class="danger-btn" onclick="deleteProduct('${p.rawId}')">Delete</button>
+        <button class="edit-btn action-btn" onclick="editProduct('${p.rawId}')">Edit</button>
+        <button class="danger-btn action-btn" onclick="deleteProduct('${p.rawId}')">Delete</button>
       </div>
     `;
     container.appendChild(item);
@@ -143,6 +192,29 @@ function fileToBase64(file) {
   });
 }
 
+// =========================================================================
+// SEQUENTIAL PRODUCT ID GENERATOR (PROD-xxx Starting from 004)
+// =========================================================================
+function generateSequentialProductId() {
+  let highestNum = 3; // Starts counter search so minimum generated ID is PROD-004
+
+  vendorProducts.forEach(p => {
+    if (p.rawId && typeof p.rawId === 'string') {
+      const match = p.rawId.match(/PROD-(\d+)/i);
+      if (match && match[1]) {
+        const num = parseInt(match[1], 10);
+        if (num > highestNum) {
+          highestNum = num;
+        }
+      }
+    }
+  });
+
+  const nextNum = highestNum + 1;
+  const paddedNum = String(nextNum).padStart(3, '0');
+  return `PROD-${paddedNum}`;
+}
+
 async function handleSaveProduct(e) {
   e.preventDefault();
   const saveBtn = document.getElementById("save-btn");
@@ -150,12 +222,10 @@ async function handleSaveProduct(e) {
 
   let finalImagesString = "";
 
-  // MODE 1: Upload from Device (Phone/PC)
   if (selectedImageMode === "file") {
     const fileInput = document.getElementById("p-file-input");
     
     if (!fileInput.files || fileInput.files.length === 0) {
-      // Fallback check if edit mode has existing image links in p-images
       const existingText = document.getElementById("p-images").value.trim();
       if (!existingText) {
         alert("Please select at least one photo from your device.");
@@ -164,14 +234,13 @@ async function handleSaveProduct(e) {
       }
       finalImagesString = existingText;
     } else {
-      saveBtn.textContent = "Uploading images to Google Drive...";
+      showLoading("Uploading images to Google Drive...");
       let uploadedUrls = [];
 
       for (let i = 0; i < fileInput.files.length; i++) {
         try {
           const fileData = await fileToBase64(fileInput.files[i]);
           
-          // Fixed CORS payload for Google Apps Script
           const uploadRes = await fetch(TELEMETRY_ENDPOINT, {
             method: "POST",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -192,15 +261,13 @@ async function handleSaveProduct(e) {
         } catch (err) {
           alert(`Failed to upload ${fileInput.files[i].name}: ${err.message}`);
           saveBtn.disabled = false;
-          saveBtn.textContent = "Save Product";
+          hideLoading();
           return;
         }
       }
       finalImagesString = uploadedUrls.join(", ");
     }
   } 
-  
-  // MODE 2: External Image Link
   else if (selectedImageMode === "link") {
     const pastedUrls = document.getElementById("p-images").value.trim();
     if (!pastedUrls) {
@@ -211,9 +278,12 @@ async function handleSaveProduct(e) {
     finalImagesString = pastedUrls;
   }
 
-  saveBtn.textContent = "Saving to Google Sheets...";
+  showLoading("Saving to Google Sheets...");
 
-  const rawId = document.getElementById("p-rawId").value || "PROD_" + Date.now();
+  const existingRawId = document.getElementById("p-rawId").value;
+  // If editing an existing item, keep its rawId. If new, generate PROD-004...
+  const rawId = existingRawId ? existingRawId : generateSequentialProductId();
+  
   const title = document.getElementById("p-title").value.trim();
   const category = document.getElementById("p-category").value.trim();
   const status = document.getElementById("p-status").value;
@@ -227,7 +297,7 @@ async function handleSaveProduct(e) {
   };
 
   try {
-    await fetch(TELEMETRY_ENDPOINT, {
+    const res = await fetch(TELEMETRY_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
@@ -238,18 +308,24 @@ async function handleSaveProduct(e) {
       })
     });
 
-    alert("Product saved successfully!");
-    document.getElementById("product-form").reset();
-    document.getElementById("p-rawId").value = "";
-    document.getElementById("form-title").textContent = "Add / Edit Product";
-    setImageMode('file'); // Reset mode
-    
-    setTimeout(fetchVendorInventory, 1000);
+    const json = await res.json();
+
+    if (json.success) {
+      alert(`Product [${rawId}] saved successfully!`);
+      document.getElementById("product-form").reset();
+      document.getElementById("p-rawId").value = "";
+      document.getElementById("form-title").textContent = "Add / Edit Product";
+      setImageMode('file');
+      
+      await fetchVendorInventory();
+    } else {
+      alert("Save failed: " + (json.error || "Unknown error"));
+    }
   } catch (err) {
     alert("Failed to save product: " + err.message);
   } finally {
     saveBtn.disabled = false;
-    saveBtn.textContent = "Save Product";
+    hideLoading();
   }
 }
 
@@ -267,16 +343,18 @@ function editProduct(rawId) {
   document.getElementById("p-description").value = p.description;
   document.getElementById("p-specifications").value = p.specifications;
 
-  setImageMode('link'); // Default to link view when editing existing item
-  document.getElementById("form-title").textContent = "Editing: " + p.title;
+  setImageMode('link');
+  document.getElementById("form-title").textContent = "Editing: " + p.title + " (" + p.rawId + ")";
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 async function deleteProduct(rawId) {
-  if (!confirm("Are you sure you want to delete this product?")) return;
+  if (!confirm(`Are you sure you want to delete product ${rawId}?`)) return;
+
+  showLoading("Deleting product...");
 
   try {
-    await fetch(TELEMETRY_ENDPOINT, {
+    const res = await fetch(TELEMETRY_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
@@ -287,13 +365,23 @@ async function deleteProduct(rawId) {
       })
     });
 
-    alert("Product deleted.");
-    setTimeout(fetchVendorInventory, 1000);
+    const json = await res.json();
+    if (json.success) {
+      alert("Product deleted.");
+      await fetchVendorInventory();
+    } else {
+      alert("Delete failed: " + (json.error || "Unknown error"));
+    }
   } catch (err) {
     alert("Delete failed: " + err.message);
+  } finally {
+    hideLoading();
   }
 }
-//lets add orders
+
+// =========================================================================
+// ORDERS MANAGEMENT
+// =========================================================================
 function switchMainView(view) {
   const prodSec = document.getElementById("section-products");
   const orderSec = document.getElementById("section-orders");
@@ -310,7 +398,7 @@ function switchMainView(view) {
     prodSec.classList.add("hidden");
     navOrders.classList.add("active-view");
     navProd.classList.remove("active-view");
-    fetchVendorOrders(); // Load customer orders on tab open
+    fetchVendorOrders();
   }
 }
 
@@ -319,7 +407,7 @@ async function fetchVendorOrders() {
   container.innerHTML = "<p style='color:var(--text-muted);'>Syncing orders from Google Sheets...</p>";
 
   try {
-    const res = await fetch(`${TELEMETRY_ENDPOINT}?action=getVendorOrders&vendor=${encodeURIComponent(activeVendor)}&passkey=${encodeURIComponent(activePasskey)}`);
+    const res = await fetch(`${TELEMETRY_ENDPOINT}?action=getVendorOrders&vendor=${encodeURIComponent(activeVendor)}&passkey=${encodeURIComponent(activePasskey)}&_t=${Date.now()}`);
     const data = await res.json();
 
     if (data.success && data.orders && data.orders.length > 0) {
